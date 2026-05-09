@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON_MATH // STABLE_TEXT</title>
+    <title>NEON_MATH // FULL_MOBILE</title>
     <style>
         :root { --neon-blue: #0ff; --neon-red: #f44; --neon-green: #4f4; --bg: #000; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body { 
-            background: #111; color: #fff; font-family: 'Courier New', monospace; 
-            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background: #000; color: #fff; font-family: 'Courier New', monospace; 
+            margin: 0; padding: 0; 
+            width: 100vw; height: 100dvh; /* dvh handles mobile browser bars */
             overflow: hidden; touch-action: none; display: flex; justify-content: center;
         }
 
         #master-wrapper {
-            width: 100%; max-width: 450px; height: 100vh; background: var(--bg);
+            width: 100%; height: 100%; background: var(--bg);
             display: flex; flex-direction: column; position: relative;
-            border-left: 1px solid #222; border-right: 1px solid #222;
         }
 
+        /* 1. TOP HEADER (15% Height) */
         #top-interface {
-            height: 15vh; width: 100%; background: #0a0a0a; 
+            height: 15%; width: 100%; background: #0a0a0a; 
             border-bottom: 2px solid #222; display: none;
             flex-direction: column; align-items: center; justify-content: center;
             padding: 5px; z-index: 50;
@@ -33,27 +34,30 @@
             margin-top: 5px; height: 45px; text-align: center;
         }
 
+        /* 2. MIDDLE GAME SCREEN (50% Height) */
         #game-area {
-            height: 50vh; width: 100%; position: relative;
+            height: 50%; width: 100%; position: relative;
             background: #000; border-bottom: 1px solid #111;
         }
         canvas { display: block; width: 100%; height: 100%; }
 
+        /* 3. BOTTOM NUMPAD (35% Height) */
         #kb-container { 
-            height: 35vh; width: 100%; background: #050505;
+            height: 35%; width: 100%; background: #050505;
             display: none; grid-template-columns: repeat(3, 1fr); gap: 6px;
             padding: 10px; touch-action: manipulation;
         }
         .key { 
             background: #151515; border: 1px solid #333; color: #fff; 
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; font-weight: bold; border-radius: 4px;
+            font-size: 1.8rem; font-weight: bold; border-radius: 6px;
             cursor: pointer; user-select: none;
         }
         .key:active { background: #fff; color: #000; }
         .clr { color: var(--neon-red); border-color: var(--neon-red); }
         .exe { color: var(--neon-green); border-color: var(--neon-green); }
 
+        /* OVERLAYS */
         .screen { 
             position: absolute; inset: 0; background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -72,11 +76,6 @@
             <h1 style="letter-spacing: 5px; color: var(--neon-blue);">NEON_MATH</h1>
             <button class="menu-btn" onclick="startGame('easy')">01_EASY_MODE</button>
             <button class="menu-btn" onclick="startGame('hard')">02_HARD_MODE</button>
-        </div>
-
-        <div id="fail-screen" class="screen" style="display:none;">
-            <h2 style="color:var(--neon-red)">TERMINAL_BREACH</h2>
-            <button class="menu-btn" style="border-color:#f00; color:#f00;" onclick="location.reload()">RELOAD_OS</button>
         </div>
 
         <header id="top-interface">
@@ -109,15 +108,18 @@
             document.getElementById('menu-screen').style.display = 'none';
             document.getElementById('top-interface').style.display = 'flex';
             document.getElementById('kb-container').style.display = 'grid';
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+            
+            // Critical Resize for 100% Phone Screen
+            const container = document.getElementById('game-area');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
             updateUI();
             requestAnimationFrame(gameLoop);
         }
 
         function createEnemy() {
             let text, ans;
-            const rand = Math.random();
             if (mode === 'easy') {
                 const eType = Math.floor(Math.random() * 4);
                 if (eType === 0) { let n1 = Math.floor(Math.random() * 20); let n2 = Math.floor(Math.random() * 20); ans = n1 + n2; text = `${n1}+${n2}`; }
@@ -125,18 +127,16 @@
                 else if (eType === 2) { let n1 = Math.floor(Math.random() * 10); let n2 = Math.floor(Math.random() * 10); ans = n1 * n2; text = `${n1}×${n2}`; }
                 else { ans = Math.floor(Math.random() * 9) + 1; let n2 = Math.floor(Math.random() * 8) + 2; let n1 = ans * n2; text = `${n1}÷${n2}`; }
             } else {
-                const qType = Math.floor(Math.random() * 6);
+                const qType = Math.floor(Math.random() * 5);
                 if (qType === 0) { ans = Math.floor(Math.random() * 20); let a = Math.floor(Math.random() * 20); text = `X + ${a} = ${ans+a}`; }
                 else if (qType === 1) { ans = Math.floor(Math.random() * 12) + 1; text = `√${ans*ans}`; }
                 else if (qType === 2) { let m = Math.floor(Math.random() * 10) + 2; let a = Math.floor(Math.random() * 5) + 2; ans = m * a; text = `FORCE(M:${m},A:${a})`; }
-                else if (qType === 3) { let i = Math.floor(Math.random() * 10) + 2; let r = Math.floor(Math.random() * 10) + 1; ans = i * r; text = `VOLTS(I:${i},R:${r})`; }
-                else if (qType === 4) { let v = Math.floor(Math.random() * 15) + 5; let t = Math.floor(Math.random() * 5) + 2; ans = v * t; text = `DIST(V:${v},T:${t})`; }
+                else if (qType === 3) { let v = Math.floor(Math.random() * 15) + 5; let t = Math.floor(Math.random() * 5) + 2; ans = v * t; text = `DIST(V:${v},T:${t})`; }
                 else { let m = Math.floor(Math.random() * 90) + 5; ans = m * 10; text = `WEIGHT(M:${m},G:10)`; }
             }
             
-            let baseSpeed = (mode === 'easy') ? 1.2 : 0.7;
+            let baseSpeed = (mode === 'easy') ? 1.0 : 0.6;
             
-            // SPAWN RANGE: Limits horizontal position between 80px and (Width - 80px)
             enemies.push({ 
                 x: Math.random() * (canvas.width - 160) + 80, 
                 y: -50, 
@@ -154,19 +154,18 @@
             
             enemies.forEach((en, i) => {
                 en.y += en.speed;
-                
-                // AUTO-SCALING FONT LOGIC
-                // If text length > 12 characters, shrink font to 16px, otherwise keep 22px
-                let fontSize = en.text.length > 12 ? "16px" : "22px";
-                
-                ctx.shadowBlur = 10; ctx.shadowColor = en.color;
+                let fontSize = en.text.length > 12 ? "16px" : "24px";
                 ctx.fillStyle = en.color; 
                 ctx.font = `bold ${fontSize} Courier New`; 
                 ctx.textAlign = 'center';
                 ctx.fillText(en.text, en.x, en.y);
-                ctx.shadowBlur = 0;
                 
-                if (en.y > canvas.height) { enemies.splice(i, 1); hp--; updateUI(); if (hp <= 0) location.reload(); }
+                if (en.y > canvas.height) { 
+                    enemies.splice(i, 1); 
+                    hp--; 
+                    updateUI(); 
+                    if (hp <= 0) location.reload(); 
+                }
             });
             requestAnimationFrame(gameLoop);
         }
