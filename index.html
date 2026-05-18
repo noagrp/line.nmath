@@ -3,198 +3,608 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON_MATH</title>
+    <title>Line.nMath</title>
     <style>
-        :root { --neon-blue: #0ff; --neon-red: #f44; --neon-green: #4f4; --bg: #000; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            background: #111; color: #fff; font-family: 'Courier New', monospace; 
-            margin: 0; padding: 0; 
-            /* FIXED: Use dvh to ensure everything fits on mobile screens */
-            width: 100vw; height: 100dvh; 
-            overflow: hidden; touch-action: none; display: flex; justify-content: center;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            /* Prevent bouncing scroll gestures on mobile touch drags */
+            overflow: hidden; 
+            padding: 10px;
+            touch-action: none;
+        }
+        /* Strict single column layout wrapper ensuring zero structural overlapping */
+        #gameWrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            gap: 5px;
+        }
+        #questionHeaderZone {
+            width: 100%;
+            text-align: center;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #questionTextDisplay {
+            font-size: 2.2rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 15px #ff00ff, 0 0 5px #ff00ff;
+            animation: floatDrop 2.5s ease-in-out infinite alternate;
+        }
+        @keyframes floatDrop {
+            0% { transform: translateY(-4px); }
+            100% { transform: translateY(4px); }
+        }
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.08);
+            border: 2px solid #111;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #000000;
+            width: 100%;
+            flex-shrink: 1;
+        }
+        canvas {
+            background-color: #000000;
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        #uiOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10;
+            text-align: center;
+            padding: 15px;
+        }
+        .hide {
+            display: none !important;
+        }
+        h1 {
+            font-size: 3rem;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        p {
+            font-size: 1.1rem;
+            color: #ff00ff;
+            text-shadow: 0 0 8px #ff00ff;
+            margin-bottom: 25px;
+        }
+        .btn {
+            padding: 12px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        .btn:hover {
+            background: #00ffff;
+            color: #000;
+            box-shadow: 0 0 25px #00ffff;
+            transform: scale(1.05);
+        }
+        #bottomPanel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            flex-shrink: 0;
+        }
+        .panelStats {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            color: #00ffff;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        #progressBarContainer {
+            width: 50%;
+            height: 10px;
+            background-color: #111;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #222;
+            transition: width 0.3s ease;
+        }
+        #progressBarFill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff00, #00ffcc);
+            box-shadow: 0 0 10px #00ff00;
+            transition: width 0.1s linear;
+        }
+        #instructions {
+            margin-top: 15px;
+            color: #444;
+            font-size: 0.8rem;
+            line-height: 1.4;
         }
 
-        #master-wrapper {
-            width: 100%; max-width: 450px; height: 100%; background: var(--bg);
-            display: flex; flex-direction: column; position: relative;
-            border-left: 1px solid #222; border-right: 1px solid #222;
-        }
-
-        /* HEADER (Slightly smaller at 12%) */
-        #top-interface {
-            height: 12%; width: 100%; background: #0a0a0a; 
-            border-bottom: 2px solid #222; display: none;
-            flex-direction: column; align-items: center; justify-content: center;
-            padding: 5px; z-index: 50;
-        }
-        #stats-row { width: 90%; display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; }
-        #input-box { 
-            font-size: 2.2rem; font-weight: bold; color: #fff; 
-            text-shadow: 0 0 15px var(--neon-blue); letter-spacing: 4px;
-            height: 40px; text-align: center;
-        }
-
-        /* GAME AREA (48%) */
-        #game-area {
-            height: 48%; width: 100%; position: relative;
-            background: #000; border-bottom: 1px solid #111;
-        }
-        canvas { display: block; width: 100%; height: 100%; }
-
-        /* KEYBOARD (Locked to 40% to ensure Execute is visible) */
-        #kb-container { 
-            height: 40%; width: 100%; background: #050505;
-            display: none; grid-template-columns: repeat(3, 1fr); gap: 6px;
-            padding: 8px; touch-action: manipulation;
-        }
-        .key { 
-            background: #151515; border: 1px solid #333; color: #fff; 
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; font-weight: bold; border-radius: 4px;
-            cursor: pointer; user-select: none;
-        }
-        .key:active { background: #fff; color: #000; }
-        .clr { color: var(--neon-red); border-color: var(--neon-red); }
-        .exe { color: var(--neon-green); border-color: var(--neon-green); grid-column: span 3; font-size: 1rem; }
-        .minus { color: var(--neon-blue); border-color: var(--neon-blue); }
-
-        .screen { 
-            position: absolute; inset: 0; background: var(--bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            z-index: 100; text-align: center;
-        }
-        .menu-btn { 
-            width: 260px; padding: 18px; margin: 10px; border: 2px solid var(--neon-blue); 
-            background: transparent; color: var(--neon-blue); font-weight: bold; cursor: pointer;
+        /* Mobile specific viewport scaling safeguards */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.2rem; }
+            p { font-size: 0.95rem; }
+            #questionTextDisplay { font-size: 1.8rem; }
+            .panelStats { font-size: 0.95rem; }
+            #progressBarContainer { width: 80%; } /* Thicken up progress presence on tighter screens */
         }
     </style>
 </head>
 <body>
 
-    <div id="master-wrapper">
-        <div id="menu-screen" class="screen">
-            <h1 style="letter-spacing: 5px; color: var(--neon-blue);">NEON_MATH</h1>
-            <button class="menu-btn" onclick="startGame('easy')">EASY_MODE</button>
-            <button class="menu-btn" onclick="startGame('hard')">HARD_MODE</button>
+    <div id="gameWrapper">
+        <div id="questionHeaderZone">
+            <div id="questionTextDisplay">---</div>
         </div>
 
-        <header id="top-interface">
-            <div id="stats-row"><span id="lvl-txt">NODE: 1</span><span id="hp-txt">SHIELD: 100%</span></div>
-            <div id="input-box">_</div>
-        </header>
-        
-        <main id="game-area">
-            <canvas id="gameCanvas"></canvas>
-        </main>
+        <div id="gameContainer">
+            <div id="uiOverlay">
+                <h1>Line.nMath</h1>
+                <p id="subText">Infinite climb. Survive the speed increase.</p>
+                <button id="startBtn" class="btn">Start Game</button>
+                <div id="instructions">
+                    <b>PC:</b> Arrow Keys or WASD to steer.<br>
+                    <b>Phone:</b> Swipe anywhere on the screen to turn.
+                </div>
+            </div>
+            <canvas id="gameCanvas" width="800" height="550"></canvas>
+        </div>
 
-        <footer id="kb-container">
-            <div class="key" onclick="key('1')">1</div><div class="key" onclick="key('2')">2</div><div class="key" onclick="key('3')">3</div>
-            <div class="key" onclick="key('4')">4</div><div class="key" onclick="key('5')">5</div><div class="key" onclick="key('6')">6</div>
-            <div class="key" onclick="key('7')">7</div><div class="key" onclick="key('8')">8</div><div class="key" onclick="key('9')">9</div>
-            <div class="key clr" onclick="key('C')">Clear</div><div class="key" onclick="key('0')">0</div><div class="key minus" onclick="key('-')">-</div>
-            <div class="key exe" onclick="key('E')">Enter_Answer</div>
-        </footer>
+        <div id="bottomPanel">
+            <div class="panelStats">
+                <span id="levelDisplay">LEVEL: 1</span>
+                <span id="targetDisplay">PROGRESS: 0 / 10</span>
+            </div>
+            <div id="progressBarContainer">
+                <div id="progressBarFill"></div>
+            </div>
+        </div>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let mode = 'easy', score = 0, hp = 5, level = 1, isRunning = false;
-        let enemies = [], lastSpawn = 0, currentInput = "";
-        const NEONS = ['#0ff', '#f0f', '#0f0', '#ff0', '#fff', '#f44'];
+        const uiOverlay = document.getElementById('uiOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const subText = document.getElementById('subText');
+        const questionTextDisplay = document.getElementById('questionTextDisplay');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const targetDisplay = document.getElementById('targetDisplay');
+        const progressFill = document.getElementById('progressBarFill');
+        const progressContainer = document.getElementById('progressBarContainer');
 
-        function startGame(m) {
-            mode = m; score = 0; hp = 5; level = 1; enemies = []; 
-            isRunning = true;
-            document.getElementById('menu-screen').style.display = 'none';
-            document.getElementById('top-interface').style.display = 'flex';
-            document.getElementById('kb-container').style.display = 'grid';
-            
-            // Recalculate canvas size based on new proportions
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            
-            updateUI();
-            requestAnimationFrame(gameLoop);
+        // Web Audio Synthesizer Engine
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'hitCorrect') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'hitWrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'levelUp') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.setValueAtTime(880, now + 0.08);
+                osc.frequency.setValueAtTime(1174.66, now + 0.16);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'gameOver') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.5);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
         }
 
-        function createEnemy() {
-            let text, ans;
-            if (mode === 'easy') {
-                const eType = Math.floor(Math.random() * 4);
-                if (eType === 0) { 
-                    let n1 = Math.floor(Math.random() * 20); let n2 = Math.floor(Math.random() * 20); 
-                    ans = n1 + n2; text = `${n1}+${n2}`; 
-                } else if (eType === 1) { 
-                    let n1 = Math.floor(Math.random() * 10); let n2 = Math.floor(Math.random() * 15); 
-                    ans = n1 - n2; text = `${n1}-${n2}`; 
-                } else if (eType === 2) {
-                    let n1 = Math.floor(Math.random() * 10); let n2 = Math.floor(Math.random() * 5);
-                    ans = n1 * n2; text = `${n1}*${n2}`;
+        // Core Game Configurations
+        const START_LENGTH = 15;
+        const GROWTH_AMOUNT = 8;
+        const SHRINK_AMOUNT = 6;
+
+        // Variables
+        let line = [];
+        let baseSpeed = 3.5;
+        let currentSpeed = baseSpeed;
+        let direction = { x: baseSpeed, y: 0 };
+        let nextDirection = { x: baseSpeed, y: 0 };
+        let currentLength = START_LENGTH;
+        let gameActive = false;
+        
+        let currentLevel = 1;
+        let correctEatenThisLevel = 0;
+        let targetNeededThisLevel = 10;
+
+        let correctAnswer = 0;
+        let targets = [];
+        const NEON_COLORS = ['#ff0055', '#00ffcc', '#ffcc00', '#ff00ff', '#00ff00', '#9900ff', '#ff5500'];
+        
+        // Variable tracking color rainbow cycle index shifting
+        let rainbowHueBase = 0;
+
+        // Mobile Swipe Geometry Tracking
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Event Listeners
+        window.addEventListener('keydown', handleKeyDown);
+        startBtn.addEventListener('click', startGame);
+
+        // Responsive Mobile Touch Listeners 
+        window.addEventListener('touchstart', function(e) {
+            if (!gameActive) return;
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', function(e) {
+            if (!gameActive) return;
+            
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            
+            let dx = touchEndX - touchStartX;
+            let dy = touchEndY - touchStartY;
+            
+            // Check if user swiped past minimum pixel threshold to turn
+            if (Math.max(Math.abs(dx), Math.abs(dy)) > 30) {
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    // Horizontal turns
+                    if (dx > 0 && direction.x === 0) nextDirection = { x: currentSpeed, y: 0 };
+                    else if (dx < 0 && direction.x === 0) nextDirection = { x: -currentSpeed, y: 0 };
                 } else {
-                    ans = Math.floor(Math.random() * 5) + 1; let n2 = Math.floor(Math.random() * 5) + 1;
-                    let n1 = ans * n2; text = `${n1}/${n2}`;
+                    // Vertical turns
+                    if (dy > 0 && direction.y === 0) nextDirection = { x: 0, y: currentSpeed };
+                    else if (dy < 0 && direction.y === 0) nextDirection = { x: 0, y: -currentSpeed };
                 }
-            } else {
-                const qType = Math.floor(Math.random() * 5);
-                if (qType === 0) { ans = Math.floor(Math.random() * 20); let a = Math.floor(Math.random() * 20); text = `X + ${a} = ${ans+a}`; }
-                else if (qType === 1) { ans = Math.floor(Math.random() * 12) + 1; text = `√${ans*ans}`; }
-                else if (qType === 2) { let m = Math.floor(Math.random() * 10) + 2; let a = Math.floor(Math.random() * 5) + 2; ans = m * a; text = `FORCE(M:${m},A:${a})`; }
-                else if (qType === 3) { let v = Math.floor(Math.random() * 15) + 5; let t = Math.floor(Math.random() * 5) + 2; ans = v * t; text = `DIST(V:${v},T:${t})`; }
-                else { let m = Math.floor(Math.random() * 90) + 5; ans = m * 10; text = `WEIGHT(M:${m},G:10)`; }
             }
-            enemies.push({ x: Math.random() * (canvas.width - 160) + 80, y: -50, text, ans, color: NEONS[Math.floor(Math.random() * NEONS.length)], speed: 0.8 + (level * 0.15) });
+        }, { passive: true });
+
+        function startGame() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            uiOverlay.classList.add('hide');
+            
+            currentLength = START_LENGTH;
+            currentLevel = 1;
+            correctEatenThisLevel = 0;
+            targetNeededThisLevel = 10;
+            currentSpeed = baseSpeed;
+            
+            direction = { x: currentSpeed, y: 0 };
+            nextDirection = { x: currentSpeed, y: 0 };
+            
+            line = [];
+            for (let i = 0; i < START_LENGTH; i++) {
+                line.push({ x: 150 - i * 2, y: canvas.height / 2 });
+            }
+            
+            generateQuestion();
+            updateUIPanel();
+            gameActive = true;
+            gameLoop();
         }
 
-        function gameLoop(time) {
-            if (!isRunning) return;
-            if (time - lastSpawn > Math.max(800, 3000 - (level * 300))) { createEnemy(); lastSpawn = time; }
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            enemies.forEach((en, i) => {
-                en.y += en.speed;
-                let fontSize = en.text.length > 12 ? "16px" : "22px";
-                ctx.fillStyle = en.color; ctx.font = `bold ${fontSize} Courier New`; ctx.textAlign = 'center';
-                ctx.fillText(en.text, en.x, en.y);
-                if (en.y > canvas.height) { enemies.splice(i, 1); hp--; updateUI(); if (hp <= 0) location.reload(); }
+        function gameOver() {
+            gameActive = false;
+            playSound('gameOver');
+            questionTextDisplay.innerText = "---";
+            uiOverlay.classList.remove('hide');
+            subText.innerText = `You climbed all the way to Level ${currentLevel}!`;
+            startBtn.innerText = "Climb Again";
+        }
+
+        function handleKeyDown(e) {
+            if (!gameActive) return;
+            
+            switch (e.key.toLowerCase()) {
+                case 'arrowup':
+                case 'w':
+                    if (direction.y === 0) nextDirection = { x: 0, y: -currentSpeed };
+                    break;
+                case 'arrowdown':
+                case 's':
+                    if (direction.y === 0) nextDirection = { x: 0, y: currentSpeed };
+                    break;
+                case 'arrowleft':
+                case 'a':
+                    if (direction.x === 0) nextDirection = { x: -currentSpeed, y: 0 };
+                    break;
+                case 'arrowright':
+                case 'd':
+                    if (direction.x === 0) nextDirection = { x: currentSpeed, y: 0 };
+                    break;
+            }
+        }
+
+        function generateQuestion() {
+            const types = ['+', '-', '*', '/'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            let num1, num2;
+            let displayQuestion = "";
+
+            switch(type) {
+                case '+':
+                    num1 = Math.floor(Math.random() * 40) + 1;
+                    num2 = Math.floor(Math.random() * 40) + 1;
+                    displayQuestion = `${num1} + ${num2}`;
+                    correctAnswer = num1 + num2;
+                    break;
+                case '-':
+                    num1 = Math.floor(Math.random() * 50) + 10;
+                    num2 = Math.floor(Math.random() * num1);
+                    displayQuestion = `${num1} - ${num2}`;
+                    correctAnswer = num1 - num2;
+                    break;
+                case '*':
+                    num1 = Math.floor(Math.random() * 12) + 1;
+                    num2 = Math.floor(Math.random() * 10) + 1;
+                    displayQuestion = `${num1} × ${num2}`;
+                    correctAnswer = num1 * num2;
+                    break;
+                case '/':
+                    num2 = Math.floor(Math.random() * 10) + 2;
+                    correctAnswer = Math.floor(Math.random() * 11) + 1;
+                    num1 = num2 * correctAnswer; 
+                    displayQuestion = `${num1} ÷ ${num2}`;
+                    break;
+            }
+
+            questionTextDisplay.innerText = displayQuestion;
+
+            let wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 4) + 1);
+            if (wrongAnswer === correctAnswer || wrongAnswer < 0) wrongAnswer = correctAnswer + 3;
+
+            const color1 = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+            let color2 = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+            while (color1 === color2) {
+                color2 = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+            }
+
+            targets = [
+                { value: correctAnswer, isCorrect: true, color: color1, ...getValidSpawnPos(true) },
+                { value: wrongAnswer, isCorrect: false, color: color2, ...getValidSpawnPos(false) }
+            ];
+
+            if (Math.random() > 0.5) {
+                const tempX = targets[0].x;
+                const tempY = targets[0].y;
+                targets[0].x = targets[1].x;
+                targets[0].y = targets[1].y;
+                targets[1].x = tempX;
+                targets[1].y = tempY;
+            }
+        }
+
+        function getValidSpawnPos(isLeftHalf) {
+            let x, y;
+            let valid = false;
+
+            while (!valid) {
+                if (isLeftHalf) {
+                    x = Math.floor(Math.random() * (canvas.width / 2 - 120)) + 60;
+                } else {
+                    x = Math.floor(Math.random() * (canvas.width / 2 - 120)) + (canvas.width / 2 + 60);
+                }
+                y = Math.floor(Math.random() * (canvas.height - 120)) + 60;
+                valid = true;
+            }
+            return { x, y, radius: 26 };
+        }
+
+        function updateUIPanel() {
+            levelDisplay.innerText = `LEVEL: ${currentLevel}`;
+            targetDisplay.innerText = `PROGRESS: ${correctEatenThisLevel} / ${targetNeededThisLevel}`;
+            
+            const calculatedWidthPercent = Math.min(100, (correctEatenThisLevel / targetNeededThisLevel) * 100);
+            progressFill.style.width = `${calculatedWidthPercent}%`;
+            
+            const containerWidth = Math.min(100, 50 + (currentLevel * 2));
+            progressContainer.style.width = `${containerWidth}%`;
+        }
+
+        function update() {
+            const currentDirLen = Math.hypot(nextDirection.x, nextDirection.y);
+            if (currentDirLen > 0) {
+                direction = {
+                    x: (nextDirection.x / currentDirLen) * currentSpeed,
+                    y: (nextDirection.y / currentDirLen) * currentSpeed
+                };
+            }
+
+            const head = line[0];
+            const newHead = { x: head.x + direction.x, y: head.y + direction.y };
+
+            // Wall Collisions
+            if (newHead.x < 0 || newHead.x > canvas.width || newHead.y < 0 || newHead.y > canvas.height) {
+                gameOver();
+                return;
+            }
+
+            // Self-Collision Check
+            for (let i = 8; i < line.length; i++) {
+                const dist = Math.hypot(newHead.x - line[i].x, newHead.y - line[i].y);
+                if (dist < 3) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            line.unshift(newHead);
+
+            // Target Ball Collision Matrix
+            for (let i = 0; i < targets.length; i++) {
+                const t = targets[i];
+                const dist = Math.hypot(newHead.x - t.x, newHead.y - t.y);
+                
+                if (dist < t.radius + 8) {
+                    if (t.isCorrect) {
+                        playSound('hitCorrect');
+                        currentLength += GROWTH_AMOUNT;
+                        correctEatenThisLevel++;
+                        
+                        if (correctEatenThisLevel >= targetNeededThisLevel) {
+                            currentLevel++;
+                            correctEatenThisLevel = 0;
+                            targetNeededThisLevel = 10 + (currentLevel - 1);
+                            currentSpeed = baseSpeed + (currentLevel - 1) * 0.35;
+                            playSound('levelUp');
+                        }
+                    } else {
+                        playSound('hitWrong');
+                        currentLength -= SHRINK_AMOUNT;
+                        if (currentLength < START_LENGTH) {
+                            gameOver();
+                            return;
+                        }
+                    }
+                    generateQuestion();
+                    updateUIPanel();
+                    break;
+                }
+            }
+
+            while (line.length > currentLength) {
+                line.pop();
+            }
+
+            // Continuously cycle color values across the global rainbow timeline spectrum
+            rainbowHueBase = (rainbowHueBase + 2) % 360;
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Target Ball Choices
+            targets.forEach(t => {
+                ctx.save();
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = t.color;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = t.color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 3;
+                ctx.shadowColor = '#000';
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(t.value, t.x, t.y);
+                ctx.restore();
             });
+
+            // Draw Rapid-Changing Rainbow Color Neon Line Eater
+            if (line.length > 1) {
+                ctx.save();
+                ctx.lineWidth = 10;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // Draw segment-by-segment to give the rapid rolling rainbow color wave effect
+                for (let i = 0; i < line.length - 1; i++) {
+                    // Offset each segment color relative to its distance from the head
+                    let segmentHue = (rainbowHueBase - (i * 4)) % 360;
+                    if (segmentHue < 0) segmentHue += 360;
+
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = `hsl(${segmentHue}, 100%, 50%)`;
+                    ctx.strokeStyle = `hsl(${segmentHue}, 100%, 50%)`;
+
+                    ctx.beginPath();
+                    ctx.moveTo(line[i].x, line[i].y);
+                    ctx.lineTo(line[i+1].x, line[i+1].y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            update();
+            draw();
             requestAnimationFrame(gameLoop);
         }
 
-        function key(val) {
-            if (val === 'C') {
-                currentInput = "";
-            } else if (val === 'E') {
-                let match = enemies.findIndex(en => en.ans === Number(currentInput));
-                if (match !== -1) { 
-                    enemies.splice(match, 1); 
-                    score += 100; 
-                    if (score % 500 === 0) level++; 
-                }
-                currentInput = "";
-            } else if (val === '-') {
-                if (currentInput === "") currentInput = "-";
-            } else {
-                if(currentInput.length < 6) currentInput += val;
-            }
-            document.getElementById('input-box').innerText = currentInput || "_";
-            updateUI();
-        }
-
-        function updateUI() {
-            document.getElementById('hp-txt').innerText = `SHIELD: ${hp * 20}%`;
-            document.getElementById('lvl-txt').innerText = `NODE: ${level}`;
-            document.getElementById('hp-txt').style.color = hp < 2 ? '#f44' : '#fff';
-        }
-
-        window.addEventListener('keydown', e => {
-            if (!isRunning) return;
-            if (e.key >= '0' && e.key <= '9') key(e.key);
-            if (e.key === '-') key('-');
-            if (e.key === 'Enter') key('E');
-            if (e.key === 'Backspace') key('C');
-        });
+        // Init Setup Fill
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     </script>
 </body>
 </html>
